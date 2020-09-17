@@ -57,6 +57,9 @@ where
 
 fn anaylize_entry(entry: ignore::DirEntry) -> anyhow::Result<(PathBuf, Stats)> {
     let path = entry.into_path();
+    if !path.is_file() {
+        return Err(anyhow::anyhow!("not a file"));
+    }
     log::debug!("processing {}", path.display());
     let file = BufReader::new(File::open(&path)?);
     let line_lengths: Vec<usize> = file
