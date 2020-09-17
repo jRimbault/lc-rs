@@ -5,7 +5,6 @@ authors = ["jRimbault <jacques.rimbault@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-rayon = "1.4.0"
 ignore = "0.4.16"
 structopt = "0.3.17"
 streaming-stats = "0.2.3"
