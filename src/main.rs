@@ -5,6 +5,7 @@ use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
+/// Display statistics on line lengths
 #[derive(Debug, StructOpt)]
 struct Args {
     #[structopt(parse(from_os_str))]
