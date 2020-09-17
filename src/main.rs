@@ -16,7 +16,7 @@ struct Args {
 #[cfg(debug_assertions)]
 const LOG_LEVEL: &str = concat!(env!("CARGO_PKG_NAME"), "=debug");
 #[cfg(not(debug_assertions))]
-const LOG_LEVEL: &str = "info";
+const LOG_LEVEL: &str = "error";
 
 fn main() {
     env_logger::from_env(env_logger::Env::default().default_filter_or(LOG_LEVEL)).init();
@@ -68,6 +68,7 @@ fn anaylize_entry(entry: ignore::DirEntry) -> anyhow::Result<(PathBuf, Stats)> {
         .map(|l| l.chars().count())
         .collect();
     if line_lengths.len() < 2 {
+        log::warn!("{} only has one line", path.display());
         return Err(anyhow::anyhow!("not enough lines to be significant"));
     }
     Ok((path, Stats::from(line_lengths)))
