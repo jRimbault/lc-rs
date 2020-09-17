@@ -19,7 +19,7 @@ fn main() {
 fn walker<P: AsRef<Path>, A, I, E, B>(path: &P, analyzer: A) -> B
 where
     A: Fn(ignore::DirEntry) -> Result<I, E>,
-    A: Send + Sync + Clone,
+    A: Send + Copy,
     B: std::iter::FromIterator<I>,
     I: Send,
     E: Send,
@@ -29,7 +29,6 @@ where
         .build_parallel()
         .run(move || {
             let sender = sender.clone();
-            let analyzer = analyzer.clone();
             Box::new(move |result| {
                 if result.is_err() {
                     return ignore::WalkState::Continue;
