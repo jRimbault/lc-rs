@@ -18,10 +18,39 @@ fn main() {
                     return ignore::WalkState::Continue;
                 }
                 let entry = result.unwrap();
-                sender.send(entry).unwrap();
+                sender.send(anaylize_entry(entry)).unwrap();
                 ignore::WalkState::Continue
             })
         });
-    let entries: Vec<ignore::DirEntry> = receiver.iter().collect();
-    println!("{:?}", entries);
+    let entries: std::collections::HashMap<std::path::PathBuf, FileStats> =
+        receiver.iter().filter_map(Result::ok).collect();
+    println!("{:#?}", entries);
+}
+
+fn anaylize_entry(entry: ignore::DirEntry) -> anyhow::Result<(std::path::PathBuf, FileStats)> {
+    use std::io::BufRead;
+    let file = std::io::BufReader::new(std::fs::File::open(entry.path())?);
+    let line_lengths: Vec<usize> = file
+        .lines()
+        .filter_map(Result::ok)
+        .map(|l| l.chars().count())
+        .collect();
+    Ok((entry.path().into(), FileStats::from(line_lengths.as_ref())))
+}
+
+#[derive(Debug, Default)]
+struct FileStats {
+    max: usize,
+    mean: f64,
+    median: f64,
+}
+
+impl From<&[usize]> for FileStats {
+    fn from(list: &[usize]) -> Self {
+        FileStats {
+            max: *list.iter().max().unwrap_or(&0),
+            mean: stats::mean(list.iter().copied()),
+            median: stats::median(list.iter().copied()).unwrap_or(0.),
+        }
+    }
 }
