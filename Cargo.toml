@@ -7,5 +7,6 @@ edition = "2018"
 [dependencies]
 ignore = "0.4.16"
 structopt = "0.3.17"
-streaming-stats = "0.2.3"
 anyhow = "1.0.32"
+statistical = "1.0.0"
+textwrap = "0.12.1"
