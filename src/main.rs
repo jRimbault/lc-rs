@@ -1,6 +1,7 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -11,23 +12,34 @@ struct Args {
 
 fn main() {
     let args = Args::from_args();
+    let entries: HashMap<PathBuf, FileStats> = walker(&args.path, anaylize_entry);
+    println!("{:#?}", entries);
+}
+
+fn walker<P: AsRef<Path>, A, I, E, B>(path: &P, analyzer: A) -> B
+where
+    A: Fn(ignore::DirEntry) -> Result<I, E>,
+    A: Send + Sync + Clone,
+    B: std::iter::FromIterator<I>,
+    I: Send,
+    E: Send,
+{
     let (sender, receiver) = std::sync::mpsc::channel();
-    ignore::WalkBuilder::new(&args.path)
+    ignore::WalkBuilder::new(&path)
         .build_parallel()
         .run(move || {
             let sender = sender.clone();
+            let analyzer = analyzer.clone();
             Box::new(move |result| {
                 if result.is_err() {
                     return ignore::WalkState::Continue;
                 }
                 let entry = result.unwrap();
-                sender.send(anaylize_entry(entry)).unwrap();
+                sender.send(analyzer(entry)).unwrap();
                 ignore::WalkState::Continue
             })
         });
-    let entries: std::collections::HashMap<PathBuf, FileStats> =
-        receiver.iter().filter_map(Result::ok).collect();
-    println!("{:#?}", entries);
+    receiver.iter().filter_map(Result::ok).collect()
 }
 
 fn anaylize_entry(entry: ignore::DirEntry) -> anyhow::Result<(PathBuf, FileStats)> {
