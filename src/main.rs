@@ -21,7 +21,7 @@ const LOG_LEVEL: &str = "error";
 fn main() {
     env_logger::from_env(env_logger::Env::default().default_filter_or(LOG_LEVEL)).init();
     let args = Args::from_args();
-    let entries: HashMap<PathBuf, Stats> = walker(&args.path, anaylize_entry);
+    let entries: HashMap<PathBuf, Stats> = walker(&args.path, |r| anaylize_entry(r?));
     if args.verbose {
         for (filename, stats) in entries.iter() {
             println!("{}", filename.display());
@@ -33,9 +33,9 @@ fn main() {
     println!("{}", stats);
 }
 
-fn walker<P: AsRef<Path>, A, I, E, B>(path: &P, analyzer: A) -> B
+fn walker<P: AsRef<Path>, A, I, E, B>(path: &P, walker_fn: A) -> B
 where
-    A: Fn(ignore::DirEntry) -> Result<I, E>,
+    A: Fn(Result<ignore::DirEntry, ignore::Error>) -> Result<I, E>,
     A: Send + Copy,
     B: std::iter::FromIterator<I>,
     I: Send,
@@ -47,11 +47,7 @@ where
         .run(move || {
             let sender = sender.clone();
             Box::new(move |result| {
-                if result.is_err() {
-                    return ignore::WalkState::Continue;
-                }
-                let entry = result.unwrap();
-                sender.send(analyzer(entry)).unwrap();
+                sender.send(walker_fn(result)).unwrap();
                 ignore::WalkState::Continue
             })
         });
