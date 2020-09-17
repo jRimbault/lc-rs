@@ -31,7 +31,7 @@ def main(args):
 
 def analyze_file(path):
     with open(path) as file:
-        lines_lengths = [len(line) for line in file]
+        lines_lengths = [len(line.rstrip()) for line in file]
         lines_lengths = lines_lengths if len(lines_lengths) != 0 else [0]
         return (path, FileStats.from_lines(lines_lengths))
 
