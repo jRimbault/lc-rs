@@ -1,9 +1,12 @@
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 struct Args {
     #[structopt(parse(from_os_str))]
-    path: std::path::PathBuf,
+    path: PathBuf,
 }
 
 fn main() {
@@ -22,14 +25,13 @@ fn main() {
                 ignore::WalkState::Continue
             })
         });
-    let entries: std::collections::HashMap<std::path::PathBuf, FileStats> =
+    let entries: std::collections::HashMap<PathBuf, FileStats> =
         receiver.iter().filter_map(Result::ok).collect();
     println!("{:#?}", entries);
 }
 
-fn anaylize_entry(entry: ignore::DirEntry) -> anyhow::Result<(std::path::PathBuf, FileStats)> {
-    use std::io::BufRead;
-    let file = std::io::BufReader::new(std::fs::File::open(entry.path())?);
+fn anaylize_entry(entry: ignore::DirEntry) -> anyhow::Result<(PathBuf, FileStats)> {
+    let file = BufReader::new(File::open(entry.path())?);
     let line_lengths: Vec<usize> = file
         .lines()
         .filter_map(Result::ok)
