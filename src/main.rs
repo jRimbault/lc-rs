@@ -43,13 +43,14 @@ where
 }
 
 fn anaylize_entry(entry: ignore::DirEntry) -> anyhow::Result<(PathBuf, FileStats)> {
-    let file = BufReader::new(File::open(entry.path())?);
+    let path = entry.into_path();
+    let file = BufReader::new(File::open(&path)?);
     let line_lengths: Vec<usize> = file
         .lines()
         .filter_map(Result::ok)
         .map(|l| l.chars().count())
         .collect();
-    Ok((entry.path().into(), FileStats::from(line_lengths.as_ref())))
+    Ok((path, FileStats::from(line_lengths.as_ref())))
 }
 
 #[derive(Debug, Default)]
