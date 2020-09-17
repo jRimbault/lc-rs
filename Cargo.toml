@@ -1,5 +1,5 @@
 [package]
-name = "lc-rs"
+name = "lc"
 version = "0.1.0"
 authors = ["jRimbault <jacques.rimbault@gmail.com>"]
 edition = "2018"
@@ -10,3 +10,5 @@ structopt = "0.3.17"
 anyhow = "1.0.32"
 statistical = "1.0.0"
 textwrap = "0.12.1"
+log = "0.4.11"
+env_logger = "0.7.1"

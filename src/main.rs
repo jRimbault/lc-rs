@@ -13,7 +13,13 @@ struct Args {
     verbose: bool,
 }
 
+#[cfg(debug_assertions)]
+const LOG_LEVEL: &str = concat!(env!("CARGO_PKG_NAME"), "=debug");
+#[cfg(not(debug_assertions))]
+const LOG_LEVEL: &str = "info";
+
 fn main() {
+    env_logger::from_env(env_logger::Env::default().default_filter_or(LOG_LEVEL)).init();
     let args = Args::from_args();
     let entries: HashMap<PathBuf, Stats> = walker(&args.path, anaylize_entry);
     if args.verbose {
@@ -54,12 +60,16 @@ where
 
 fn anaylize_entry(entry: ignore::DirEntry) -> anyhow::Result<(PathBuf, Stats)> {
     let path = entry.into_path();
+    log::debug!("processing {}", path.display());
     let file = BufReader::new(File::open(&path)?);
     let line_lengths: Vec<usize> = file
         .lines()
         .filter_map(Result::ok)
         .map(|l| l.chars().count())
         .collect();
+    if line_lengths.len() < 2 {
+        return Err(anyhow::anyhow!("not enough lines to be significant"));
+    }
     Ok((path, Stats::from(line_lengths)))
 }
 
