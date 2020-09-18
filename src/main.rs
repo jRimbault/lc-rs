@@ -120,7 +120,7 @@ impl fmt::Display for Stats {
                     "  Range (min … max):  {:>4} …  {:>4} (excluding lengths < 2)",
                     self.min, self.max
                 )
-            },
+            }
             _ => {
                 writeln!(
                     f,
