@@ -31,8 +31,7 @@ fn main() {
         }
     }
     let lines: Vec<usize> = entries.into_iter().flat_map(|(_, f)| f.lines).collect();
-    let stats = Stats::from(lines);
-    println!("{}", stats);
+    println!("{}", Stats::from(lines));
 }
 
 type IgnoreResult = Result<ignore::DirEntry, ignore::Error>;
