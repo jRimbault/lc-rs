@@ -90,7 +90,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
-        if: matrix.os != 'macos-latest'
+        # sometimes the cache on macos can be flaky
+        # if: matrix.os != 'macos-latest'
         with:
           path: |
             ~/.cargo/registry
