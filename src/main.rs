@@ -26,7 +26,8 @@ fn main() {
     if args.verbose {
         for (filename, stats) in entries.iter() {
             println!("{}", filename.display());
-            println!("{}", textwrap::indent(&stats.to_string(), "  "));
+            println!("{:^}", stats);
+            println!();
         }
     }
     let lines: Vec<usize> = entries.into_iter().flat_map(|(_, f)| f.lines).collect();
@@ -107,15 +108,31 @@ impl From<Vec<usize>> for Stats {
 
 impl fmt::Display for Stats {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(
-            f,
-            "Length (mean ± σ):  {:>4.1} ±  {:>4.1}",
-            self.mean, self.standard_deviation
-        )?;
-        write!(
-            f,
-            "Range (min … max):  {:>4} …  {:>4} (excluding lengths < 2)",
-            self.min, self.max
-        )
+        match f.align() {
+            Some(fmt::Alignment::Center) => {
+                writeln!(
+                    f,
+                    "  Length (mean ± σ):  {:>4.1} ±  {:>4.1}",
+                    self.mean, self.standard_deviation
+                )?;
+                write!(
+                    f,
+                    "  Range (min … max):  {:>4} …  {:>4} (excluding lengths < 2)",
+                    self.min, self.max
+                )
+            },
+            _ => {
+                writeln!(
+                    f,
+                    "Length (mean ± σ):  {:>4.1} ±  {:>4.1}",
+                    self.mean, self.standard_deviation
+                )?;
+                write!(
+                    f,
+                    "Range (min … max):  {:>4} …  {:>4} (excluding lengths < 2)",
+                    self.min, self.max
+                )
+            }
+        }
     }
 }
