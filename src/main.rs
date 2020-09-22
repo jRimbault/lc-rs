@@ -22,7 +22,7 @@ const LOG_LEVEL: &str = "error";
 fn main() {
     env_logger::from_env(env_logger::Env::default().default_filter_or(LOG_LEVEL)).init();
     let args = Args::from_args();
-    let entries: HashMap<PathBuf, Stats> = walker(&args.path, anaylize_entry);
+    let entries = walk_dir(&args.path);
     if args.verbose {
         for (filename, stats) in entries.iter() {
             println!("{}", filename.display());
@@ -34,31 +34,16 @@ fn main() {
     println!("{}", Stats::from(lines));
 }
 
-type IgnoreResult = Result<ignore::DirEntry, ignore::Error>;
-
-fn walker<P: AsRef<Path>, A, I, E, B>(path: &P, walker_fn: A) -> B
-where
-    A: Fn(IgnoreResult) -> Result<I, E>,
-    A: Send + Copy,
-    B: std::iter::FromIterator<I>,
-    I: Send,
-    E: Send,
-{
-    let (sender, receiver) = std::sync::mpsc::channel();
-    ignore::WalkBuilder::new(&path)
+fn walk_dir<P: AsRef<Path>>(path: &P) -> HashMap<PathBuf, Stats> {
+    ignore::WalkBuilder::new(path)
         .build_parallel()
-        .run(move || {
-            let sender = sender.clone();
-            Box::new(move |result| {
-                sender.send(walker_fn(result)).unwrap();
-                ignore::WalkState::Continue
-            })
-        });
-    receiver.iter().filter_map(Result::ok).collect()
+        .map(analyze_entry)
+        .filter_map(Result::ok)
+        .collect()
 }
 
-fn anaylize_entry(entry: IgnoreResult) -> anyhow::Result<(PathBuf, Stats)> {
-    let path = entry?.into_path();
+fn analyze_entry(entry: ignore::DirEntry) -> anyhow::Result<(PathBuf, Stats)> {
+    let path = entry.into_path();
     if !path.is_file() {
         return Err(anyhow::anyhow!("not a file"));
     }
@@ -133,5 +118,34 @@ impl fmt::Display for Stats {
                 )
             }
         }
+    }
+}
+
+trait WalkParallelMap {
+    fn map<F, I>(self, fnmap: F) -> std::sync::mpsc::IntoIter<I>
+    where
+        F: Fn(ignore::DirEntry) -> I,
+        F: Send + Copy,
+        I: Send;
+}
+
+impl WalkParallelMap for ignore::WalkParallel {
+    fn map<F, I>(self, fnmap: F) -> std::sync::mpsc::IntoIter<I>
+    where
+        F: Fn(ignore::DirEntry) -> I,
+        F: Send + Copy,
+        I: Send,
+    {
+        let (sender, receiver) = std::sync::mpsc::channel();
+        self.run(move || {
+            let sender = sender.clone();
+            Box::new(move |result| {
+                if let Ok(entry) = result {
+                    sender.send(fnmap(entry)).unwrap();
+                }
+                ignore::WalkState::Continue
+            })
+        });
+        receiver.into_iter()
     }
 }
