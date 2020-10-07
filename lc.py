@@ -7,6 +7,7 @@ import statistics
 import sys
 from dataclasses import dataclass
 from pprint import pprint
+from typing import List
 
 
 def main(args):
@@ -16,7 +17,7 @@ def main(args):
         for file in files
     )
 
-    with multiprocessing.Pool(multiprocessing.cpu_count()) as pool:
+    with multiprocessing.Pool() as pool:
         counters = dict(pool.map(analyze_file, walker))
 
     gmean = statistics.mean(stat.mean for stat in counters.values())
@@ -31,23 +32,26 @@ def main(args):
 
 def analyze_file(path):
     with open(path) as file:
-        lines_lengths = [len(line.rstrip()) for line in file]
-        lines_lengths = lines_lengths if len(lines_lengths) != 0 else [0]
-        return (path, FileStats.from_lines(lines_lengths))
+        lines_lengths = [
+            length for length in (len(line.rstrip()) for line in file) if length
+        ]
+        return (path, FileStats.from_lines(lines_lengths or [0]))
 
 
 @dataclass
 class FileStats:
+    lines: List[int]
     max: int
     mean: float
     median: float
 
     @staticmethod
-    def from_lines(lines_lengths: [int]):
+    def from_lines(lines_lengths: List[int]):
         return FileStats(
             max=max(lines_lengths),
             mean=statistics.mean(lines_lengths),
             median=statistics.median(lines_lengths),
+            lines=lines_lengths,
         )
 
 

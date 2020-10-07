@@ -53,6 +53,7 @@ fn analyze_entry(entry: ignore::DirEntry) -> anyhow::Result<(PathBuf, Stats)> {
         .lines()
         .filter_map(Result::ok)
         .map(|l| l.chars().count())
+        .filter(|&l| l > 0)
         .collect();
     if line_lengths.len() < 2 {
         log::warn!("{} only has one line", path.display());
